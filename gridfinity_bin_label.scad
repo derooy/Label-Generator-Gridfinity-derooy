@@ -35,7 +35,7 @@ batch_label_data = [
 
 
 /* [Part customization] */
-Component = "phillips head bolt"; // [phillips head bolt, phillips wood screw, Wall Anchor, Torx wood screw, Phillips head countersunk, Socket head bolt, Hex head bolt, Dome head bolt, Flat Head countersunk, Standard washer, Spring washer, Standard nut, Lock nut, Heat set inserts, Torx head bolt, Countersunk Torx head bolt, None, Custom Text]
+Component = "Custom Text"; // [phillips head bolt, phillips wood screw, Wall Anchor, Torx wood screw, Phillips head countersunk, Socket head bolt, Hex head bolt, Dome head bolt, Flat Head countersunk, Standard washer, Spring washer, Standard nut, Lock nut, Heat set inserts, Torx head bolt, Countersunk Torx head bolt, None, Custom Text]
 diameter = "M4";  // free text, e.g. "1/4-20", "#8-32"
 hardware_length = 24;
 
@@ -54,7 +54,7 @@ text_type  = "Raised Text";                  // [Raised Text, Flush Text]
 //Font size
 text_size  = 4.2;
 // Custom text (only used when Component is set to "Custom Text")
-custom_text = "Custom";
+custom_text = "Computer";
 
 /* [Batch exporter] */
 // Enable this feature if you want generate a lot of different labels at once.
@@ -71,9 +71,10 @@ $fs      = 0.1;
 $fa      = 5;
 
 /* [Hidden] */
+epsilon     = 0.001;  // Small value to avoid zero-thickness geometry issues
 Font        = str(text_font, ":style=", Font_Style);
 length      = getDimensions(Y_units);
-text_height = (text_type == "Raised Text") ? 0.2 : 0.01;
+text_height = (text_type == "Raised Text") ? 0.8 : epsilon;
 
 
 //////////////////////////////////////////////////////////////
@@ -82,12 +83,18 @@ text_height = (text_type == "Raised Text") ? 0.2 : 0.01;
 if (batch_export) {
     generate_multiple_labels();
 } else {
-    label(
-        length          = length, 
-        width           = width, 
+    // Component 1: Base
+    label_base(
+        length          = length,
+        width           = width,
         height          = height,
         radius          = radius,
-        champfer        = champfer,
+        champfer        = champfer
+    );
+
+    // Component 2: Text and icons
+    label_content(
+        height          = height,
         Component       = Component,
         diameter        = diameter,
         hardware_length = hardware_length
@@ -135,9 +142,9 @@ module generate_multiple_labels() {
 
 
 //////////////////////////////////////////////////////////////
-//         MAIN LABEL MODULE (base + icons/text)           //
+//         LABEL BASE MODULE (Component 1)                 //
 //////////////////////////////////////////////////////////////
-module label(length, width, height, radius, champfer, Component, diameter, hardware_length) {
+module label_base(length, width, height, radius, champfer) {
     color(Label_color) {
         difference() {
             labelbase(length, width, height, radius, champfer);
@@ -150,9 +157,23 @@ module label(length, width, height, radius, champfer, Component, diameter, hardw
                 cylinder(h=height+1, d=1.5, center=true);
         }
     }
+}
+
+//////////////////////////////////////////////////////////////
+//         LABEL CONTENT MODULE (Component 2)              //
+//////////////////////////////////////////////////////////////
+module label_content(height, Component, diameter, hardware_length) {
     color(Content_color) {
         choose_Part_version(Component, hardware_length, width, height, diameter);
     }
+}
+
+//////////////////////////////////////////////////////////////
+//         MAIN LABEL MODULE (for batch export)            //
+//////////////////////////////////////////////////////////////
+module label(length, width, height, radius, champfer, Component, diameter, hardware_length) {
+    label_base(length, width, height, radius, champfer);
+    label_content(height, Component, diameter, hardware_length);
 }
 
 
@@ -250,9 +271,9 @@ module choose_Part_version(Part_version, hardware_length, width, height, diamete
 module standard_Nut(width, height, vertical_offset = 2.5) {
     translate([-2.5, vertical_offset, height]) {
         // top view
-        difference() {    
+        difference() {
             cylinder(h=text_height, d=5, $fn=6);
-            cylinder(h=text_height, d=3);
+            cylinder(h=text_height + epsilon, d=3);
         }
         // side view
         translate([4, -2.5, 0])
@@ -263,9 +284,9 @@ module standard_Nut(width, height, vertical_offset = 2.5) {
 module lock_Nut(width, height, vertical_offset = 2.5) {
     translate([-2.5, vertical_offset, height]) {
         // top view
-        difference() {    
+        difference() {
             cylinder(h=text_height, d=5, $fn=6);
-            cylinder(h=text_height, d=3);
+            cylinder(h=text_height + epsilon, d=3);
         }
         // side view
         translate([4, -2.5, 0])
@@ -281,7 +302,7 @@ module standard_washer(width, height, vertical_offset = 2.5) {
         // top view
         difference() {
             cylinder(h=text_height, d=5);
-            cylinder(h=text_height, d=3);
+            cylinder(h=text_height + epsilon, d=3);
         }
         // side view
         translate([4, -2.5, 0])
@@ -294,8 +315,8 @@ module spring_washer(width, height, vertical_offset = 2.5) {
         // top view (split ring)
         difference() {
             cylinder(h=text_height, d=5);
-            cylinder(h=text_height, d=3);
-            cube([5, 0.8, text_height]);
+            cylinder(h=text_height + epsilon, d=3);
+            cube([5, 0.8, text_height + epsilon]);
         }
         // side view
         translate([4, -2.5, 0])
@@ -311,7 +332,7 @@ module Heat_Set_Inserts(hardware_length, width, height, vertical_offset = 2.5) {
                 cylinder(h=text_height, r=2.5, $fn=5);
                 rotate(36) cylinder(h=text_height, r=2.5, $fn=5);
             }
-            cylinder(h=text_height, r=1.5, $fn=80);
+            cylinder(h=text_height + epsilon, r=1.5, $fn=80);
         }
         // side pattern
         translate([4, -2, 0])    cube([1, 4, text_height]);
@@ -462,7 +483,7 @@ module Socket_head(hardware_length, width, height, vertical_offset = 2.5) {
         // top view
         difference() {
             cylinder(h=text_height, d=5);
-            cylinder(h=text_height, r=1.6, $fn=6);
+            cylinder(h=text_height + epsilon, r=1.6, $fn=6);
         }
         // side view
         translate([3, -2.5, 0])
@@ -495,7 +516,7 @@ module Countersunk_socket_head(hardware_length, width, height, vertical_offset =
         // top view
         difference() {
             cylinder(h=text_height, d=5);
-            cylinder(h=text_height, r=1.6, $fn=6);
+            cylinder(h=text_height + epsilon, r=1.6, $fn=6);
         }
         // countersunk side
         translate([5, 0, 0])
@@ -513,14 +534,14 @@ module Dome_head(hardware_length, width, height, vertical_offset = 2.5) {
         // top view
         difference() {
             cylinder(h=text_height, d=5);
-            cylinder(h=text_height, r=1.6, $fn=6);
+            cylinder(h=text_height + epsilon, r=1.6, $fn=6);
         }
         // side view
         translate([6, 0, 0]) {
             difference() {
                 cylinder(h=text_height, d=5);
                 translate([0, -2.5, 0])
-                    cube([4, 5, text_height]);
+                    cube([4, 5, text_height + epsilon]);
             }
         }
         // stem
@@ -536,16 +557,16 @@ module Phillips_head(hardware_length, width, height, vertical_offset = 2.5) {
         difference() {
             cylinder(h=text_height, d=5);
             translate([-0.5, -2, 0])
-                cube([1, 4, text_height]);
+                cube([1, 4, text_height + epsilon]);
             translate([-2, -0.5, 0])
-                cube([4, 1, text_height]);
+                cube([4, 1, text_height + epsilon]);
         }
         // side view
         translate([6, 0, 0]) {
             difference() {
                 cylinder(h=text_height, d=5);
                 translate([0, -2.5, 0])
-                    cube([4, 5, text_height]);
+                    cube([4, 5, text_height + epsilon]);
             }
         }
         // stem
@@ -560,10 +581,10 @@ module Phillips_head_countersunk(hardware_length, width, height, vertical_offset
         // top view
         difference() {
             cylinder(h=text_height, d=5);
-            translate([-0.5, -2, 0])
-                cube([1, 4, text_height]);
-            translate([-2, -0.5, 0])
-                cube([4, 1, text_height]);
+            translate([-0.5, -2, -epsilon])
+                cube([1, 4, text_height + 2*epsilon]);
+            translate([-2, -0.5, -epsilon])
+                cube([4, 1, text_height + 2*epsilon]);
         }
         // countersunk side
         translate([5, 0, 0])
@@ -575,27 +596,27 @@ module Phillips_head_countersunk(hardware_length, width, height, vertical_offset
 }
 
 
-//Philips wood screw 
+//Philips wood screw
 module Phillips_Wood_Screw(hardware_length, width, height, vertical_offset = 2.5) {
     // We'll place everything in "real" X after we clamp a final stem length
     display_length = (hardware_length > 20) ? 20 : hardware_length;
-    
+
     // The start of the main stem
     stemStart = [5, -1.25, 0];
 
     // We want to shorten the actual stem by 1.5 for the tip
     // Then clamp it to the same maxLen logic used in drawBoltStem
     maxLen    = 20 * Y_units;
-    rawStem   = hardware_length - 1.5;  
+    rawStem   = hardware_length - 1.5;
     finalStem = (rawStem > maxLen) ? maxLen : rawStem;
-    
+
     translate([-display_length/2 - 2, vertical_offset, height]) {
         // Head (top view)
         difference() {
             cylinder(h=text_height, d=5);
             // Phillips "plus"
-            translate([-0.5, -2, 0]) cube([1, 4, text_height]);
-            translate([-2, -0.5, 0]) cube([4, 1, text_height]);
+            translate([-0.5, -2, -epsilon]) cube([1, 4, text_height + 2*epsilon]);
+            translate([-2, -0.5, -epsilon]) cube([4, 1, text_height + 2*epsilon]);
         }
 
         // Countersunk side

@@ -68,22 +68,25 @@ $fs = 0.1;
 $fa = 5;
 
 /* [Hidden] */
-
+epsilon = 0.001;  // Small value to avoid zero-thickness geometry issues
 
 Font = str(text_font, ":style=", Font_Style);
 
 
 length = getDimensions(Y_units);  // Set length based on Y_units value
-z_max = height + ((text_type == "Raised Text") ? text_height : 0.02);
+z_max = height + ((text_type == "Raised Text") ? text_height : epsilon);
 
-label(
-    length = length, 
-    width = width, 
+// Component 1: Base
+label_base(
+    length = length,
+    width = width,
     height = height,
     radius = radius,
-
     champfer = champfer
 );
+
+// Component 2: Text and icons
+label_content();
 
 
 
@@ -97,29 +100,43 @@ function getDimensions(Y_units) =
     (Y_units == 8) ? 100 : 0; // Default value if no match
 
 
-module label(length, width, height, radius,  champfer)
-{   
-    color("black") {  
-        difference() {
-            __shapeWithChampfer(
-                length, 
-                width, 
-                height, 
-                radius, 
-                champfer
-            );     
+//////////////////////////////////////////////////////////////
+//         LABEL BASE MODULE (Component 1)                 //
+//////////////////////////////////////////////////////////////
+module label_base(length, width, height, radius, champfer)
+{
+    color("black") {
+        __shapeWithChampfer(
+            length,
+            width,
+            height,
+            radius,
+            champfer
+        );
+    }
+}
+
+//////////////////////////////////////////////////////////////
+//         LABEL CONTENT MODULE (Component 2)              //
+//////////////////////////////////////////////////////////////
+module label_content()
+{
+    color("white") {
+        render_logo();
+
+        if (Y_units > 4){
+            render_text();
         }
     }
-    
-    color("white") { 
-        render_logo();
-        
-    if (Y_units > 4){
-        //translate([((length / 2) + width / 2), width * (2 / 5), 0]) 
-        render_text();
-    }
-        
-    }
+}
+
+//////////////////////////////////////////////////////////////
+//         MAIN LABEL MODULE (for compatibility)           //
+//////////////////////////////////////////////////////////////
+module label(length, width, height, radius, champfer)
+{
+    label_base(length, width, height, radius, champfer);
+    label_content();
 }
 
 module render_text() {
@@ -248,13 +265,13 @@ module render_hardware(Part_version, bolt_length = 8, width = width, height = he
 
 // Hardware icons generators --------------------------
 
-module standard_Nut(width, height, vertical_offset = width/2) {    
+module standard_Nut(width, height, vertical_offset = width/2) {
     // Center the icon
-    translate([-4, vertical_offset, height]) {        
+    translate([-4, vertical_offset, height]) {
     // Top view of the bolt head
-    difference() {    
-        cylinder(h=text_height, d=11, $fn=6); 
-        cylinder(h=text_height, d=6);
+    difference() {
+        cylinder(h=text_height, d=11, $fn=6);
+        cylinder(h=text_height + epsilon, d=6);
     }
     
     translate([7, -5, 0])
@@ -264,13 +281,13 @@ module standard_Nut(width, height, vertical_offset = width/2) {
 }
 
 
-module standard_washer(width, height, vertical_offset = width/2) {    
+module standard_washer(width, height, vertical_offset = width/2) {
     // Center the icon
-    translate([-2.5, vertical_offset, height]) {        
+    translate([-2.5, vertical_offset, height]) {
     // Top view of the bolt head
-    difference() {    
-        cylinder(h=text_height, d=10); 
-        cylinder(h=text_height, d=6);
+    difference() {
+        cylinder(h=text_height, d=10);
+        cylinder(h=text_height + epsilon, d=6);
     }
     
     translate([7, -5, 0])
@@ -279,14 +296,14 @@ module standard_washer(width, height, vertical_offset = width/2) {
     }
 }
 
-module spring_washer(width, height, vertical_offset = width/2) {    
+module spring_washer(width, height, vertical_offset = width/2) {
     // Center the icon
-    translate([-1.5, vertical_offset, height]) {      
+    translate([-1.5, vertical_offset, height]) {
     // Top view of the bolt head
-    difference() {    
-        cylinder(h=text_height, d=10); 
-        cylinder(h=text_height, d=6);
-        cube([5, 1.6, text_height]);
+    difference() {
+        cylinder(h=text_height, d=10);
+        cylinder(h=text_height + epsilon, d=6);
+        cube([5, 1.6, text_height + epsilon]);
     }
     
     translate([7, -5, 0])
@@ -300,17 +317,17 @@ module spring_washer(width, height, vertical_offset = width/2) {
 // Bolt icons modules  ------------------------------------------------------
 
 module Socket_head(bolt_length, width, height, vertical_offset = width/2) {
-    
+
     // Set the display length to 20 if bolt_length exceeds 20
     display_length = (bolt_length > 20) ? 20 : bolt_length;
 
     // Center the entire icon horizontally based on display_length
     translate([-display_length / 2 - 2, vertical_offset, height]) {
-        
+
         // Top view of the bolt head
-        difference() {    
-            cylinder(h=text_height, d=5); 
-            cylinder(h=text_height, r=1.6, $fn=6);
+        difference() {
+            cylinder(h=text_height, d=5);
+            cylinder(h=text_height + epsilon, r=1.6, $fn=6);
         }
         
         // Side view of the bolt head
@@ -371,17 +388,17 @@ module Hex_head(bolt_length, width, height, vertical_offset = width/2) {
 
 
 module Countersunk_socket_head(bolt_length, width, height, vertical_offset = width/2) {
-    
+
     // Set the display length to 20 if bolt_length exceeds 20
     display_length = (bolt_length > 20) ? 20 : bolt_length;
 
     // Center the entire icon horizontally based on display_length
     translate([-display_length / 2 - 2, vertical_offset, height]) {
-        
+
         // Top view of the bolt head
-        difference() {    
-            cylinder(h=text_height, d=5); 
-            cylinder(h=text_height, r=1.6, $fn=6);
+        difference() {
+            cylinder(h=text_height, d=5);
+            cylinder(h=text_height + epsilon, r=1.6, $fn=6);
         }
         
         // Side view of the bolt head
@@ -409,26 +426,26 @@ module Countersunk_socket_head(bolt_length, width, height, vertical_offset = wid
 
 
 module Dome_head(bolt_length, width, height, vertical_offset = width/2) {
-    
+
     // Set the display length to 20 if bolt_length exceeds 20
     display_length = (bolt_length > 20) ? 20 : bolt_length;
 
     // Center the entire icon horizontally based on display_length
     translate([-display_length / 2 - 2, vertical_offset, height]) {
-        
+
         // Top view of the bolt head
-        difference() {    
-            cylinder(h=text_height, d=5); 
-            cylinder(h=text_height, r=1.6, $fn=6);
+        difference() {
+            cylinder(h=text_height, d=5);
+            cylinder(h=text_height + epsilon, r=1.6, $fn=6);
         }
-        
+
         // Side view of the bolt head
         translate([6, 0, 0])
-        
+
         difference() {
             cylinder(h=text_height, d=5);
             translate([0, -2.5, 0])
-            cube([4, 5, text_height]);
+            cube([4, 5, text_height + epsilon]);
         }
         
         
